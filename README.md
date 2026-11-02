@@ -190,14 +190,3 @@ These are example runs, not a statistically representative accuracy benchmark. L
 ## Development approach and AI assistance
 
 Developed with AI assistance for implementation, explanations, debugging, and test design. My contribution included defining the financial use case, selecting source reports, checking financial figures and units, running the application and tests locally, and reviewing tool traces and responses. This project documents practical learning and does not imply independent mastery of every technology used.
-
-## Suggested 60–90 second demo
-
-1. Introduce the problem: checking financial performance and finding supporting explanations across reports.
-2. Submit the cyber_Folks organic-growth question shown above.
-3. Show the 30.29% result, correct units, and source references.
-4. Expand the data retrieval, calculation, and report-search tool events.
-5. Submit: `Podaj marżę operacyjną DemoCo za 2025 rok.` Show the missing-data response.
-6. Close with the architecture and one limitation: keyword retrieval can miss relevant wording, so answers require verification.
-
-API latency may make the live demonstration longer. For a recording, shorten waiting periods and disclose that they were edited.
