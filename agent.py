@@ -2,6 +2,7 @@ import json
 import math
 import os
 import sqlite3
+from report_search import search_report
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -19,6 +20,7 @@ FUNCTIONS = {
     "get_financial_data": get_financial_data,
     "calculate_operating_margin": calculate_operating_margin,
     "calculate_revenue_growth": calculate_revenue_growth,
+    "search_report": search_report,
 }
 
 
@@ -65,6 +67,19 @@ TOOLS = [
             "current_revenue": {"type": "number"},
         },
     ),
+    describe_tool(
+        "search_report",
+        "Wyszukuje fragmenty raportów grupy cyber_Folks za 2025 rok. "
+        "Używaj do pytań o przyczyny zmian, przejęcia i komentarze zarządu. "
+        "Podawaj 2–4 konkretne słowa kluczowe, nie całe pytanie. "
+        "Wyszukiwanie dopasowuje dokładne słowa bez rozpoznawania odmiany. "
+        "Zwraca tekst, nazwę dokumentu i numer strony. "
+        "Raporty dotyczą cyber_Folks, nie fikcyjnej spółki DemoCo.",
+        {
+            "query": {"type": "string"},
+            "top_k": {"type": "integer"},
+        },
+    ),
 ]
 
 
@@ -91,6 +106,33 @@ Zasady:
     "Nie można tego ustalić na podstawie dostępnych danych".
     Nie odpowiadaj kategorycznym "tak" lub "nie".
     Brak dowodów nie oznacza wykluczenia danej przyczyny.
+    12. Pole unit określa mnożnik wartości pieniężnych.
+    unit=1 oznacza PLN, a unit=1000 oznacza tysiące PLN.
+    Nie przedstawiaj wartości w tysiącach PLN jako pojedynczych PLN.
+13. Jeżeli source zawiera "restated", zaznacz, że dane
+    porównawcze zostały przekształcone.
+14. Rozróżniaj wzrost raportowanych przychodów od wzrostu
+    organicznego. Bez dodatkowych danych nie nazywaj wzrostu
+    przychodów wzrostem organicznym.
+    15. Do pytań o przyczyny zmian wyników cyber_Folks używaj
+    search_report. Do wartości finansowych i obliczeń nadal
+    używaj bazy danych oraz kalkulatorów.
+16. W search_report podawaj top_k=3 i krótkie słowa kluczowe.
+    Jeśli wyniki nie odpowiadają na pytanie, możesz wykonać
+    jedno dodatkowe wyszukiwanie ze zmienionymi słowami.
+17. Przy stwierdzeniach opartych na raporcie podawaj nazwę
+    dokumentu i stronę otrzymaną z narzędzia.
+    Nie wymyślaj numerów stron ani źródeł.
+18. Wynik dopasowania score nie oznacza pewności informacji.
+    Oceń treść fragmentu przed wykorzystaniem go w odpowiedzi.
+    Brak trafień nie dowodzi braku informacji w całym raporcie.
+19. Rozróżniaj dane całej grupy od danych segmentów,
+    dane roczne od kwartalnych oraz EBIT od EBITDA
+    i skorygowanej EBITDA.
+20. Nie przypisuj zdarzeń z 2026 roku do wyników za 2025,
+    jeśli źródło nie potwierdza takiego wpływu.
+21. Raporty w search_report dotyczą wyłącznie cyber_Folks.
+    Nie wykorzystuj ich do wyjaśniania wyników DemoCo.
 """
 
 
