@@ -14,3 +14,7 @@ __pycache__/
 # Baza jest odtwarzana z CSV
 data/*.db
 data/*.db-*
+# Raporty pobierane z oficjalnych źródeł
+reports/*.xhtml
+reports/*.html
+reports/*_files/
