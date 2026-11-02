@@ -1,0 +1,4 @@
+company,year,revenue,operating_profit,currency,unit,source
+DemoCo,2022,1000000,120000,PLN,1,synthetic_demo
+DemoCo,2023,1200000,180000,PLN,1,synthetic_demo
+DemoCo,2024,1350000,162000,PLN,1,synthetic_demo

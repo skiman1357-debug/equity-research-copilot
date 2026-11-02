@@ -1,0 +1,16 @@
+# Środowisko i lokalna konfiguracja
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.idea/
+
+# Pliki tymczasowe Pythona i testów
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Baza jest odtwarzana z CSV
+data/*.db
+data/*.db-*
