@@ -137,7 +137,7 @@ Zasady:
 
 
 # 3. Sprawdzamy argumenty i wykonujemy wybrane narzędzie.
-def execute_tool(call):
+def execute_tool(call, on_event=None):
     try:
         if call.name not in FUNCTIONS:
             raise ValueError("Nieznane narzędzie.")
@@ -197,6 +197,13 @@ def execute_tool(call):
 
     print("Wynik:", result)
 
+    if on_event is not None:
+        on_event({
+            "tool": call.name,
+            "arguments": call.arguments,
+            "result": result,
+        })
+
     return {
         "type": "function_call_output",
         "call_id": call.call_id,
@@ -204,49 +211,39 @@ def execute_tool(call):
     }
 
 
-# 4. Model może wielokrotnie pobierać dane i wykonywać obliczenia.
-def run_agent(client, model, question):
+def run_agent(client, model, question, on_event=None):
     next_input = [{"role": "user", "content": question}]
     previous_response_id = None
     tool_count = 0
 
-    # Maksymalnie 6 zapytań do modelu na jedno pytanie użytkownika.
     for step in range(6):
         print(f"\n[API] Krok {step + 1}/6")
-
         request = {
             "model": model,
             "input": next_input,
             "tools": TOOLS,
         }
-
         if previous_response_id is None:
-            # Instrukcje przesyłamy przy pierwszym zapytaniu.
             request["instructions"] = INSTRUCTIONS
         else:
-            # Kolejne zapytania kontynuują rozpoczętą wymianę.
             request["previous_response_id"] = previous_response_id
 
         response = client.responses.create(**request)
-
         calls = [
-            item
-            for item in response.output
+            item for item in response.output
             if item.type == "function_call"
         ]
-
         if not calls:
-            return (
-                response.output_text
-                or "Model nie zwrócił odpowiedzi tekstowej."
-            )
+            return response.output_text or "Model nie zwrócił odpowiedzi tekstowej."
 
         tool_count += len(calls)
-
         if tool_count > 12:
             return "Przerwano: przekroczono limit 12 wywołań narzędzi."
 
-        next_input = [execute_tool(call) for call in calls]
+        next_input = [
+            execute_tool(call, on_event=on_event)
+            for call in calls
+        ]
         previous_response_id = response.id
 
     return "Przerwano: osiągnięto limit 6 zapytań do modelu."
