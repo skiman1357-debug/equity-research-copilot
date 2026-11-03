@@ -1,4 +1,12 @@
 # Equity Research Copilot
+## Live demo
+
+[Open Equity Research Copilot](https://equity-research-copilot-skyduwjrw2ujtebtslnwrk.streamlit.app/)
+
+The public example is available without an access code.
+Live AI analysis requires an access code, available from the author.
+
+[Watch the video demo](https://www.youtube.com/watch?v=tvC2XNsOvrg)
 
 A personal portfolio project that combines financial analysis with an LLM agent. The application retrieves financial data from SQLite, calculates operating margins and revenue growth using Python functions, and searches company reports to support explanations with document names and page references.
 
