@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from openai import OpenAI, APIConnectionError, APIStatusError
 
 from agent import run_agent
+from deployment import access_allowed, prepare_data
 
 
 st.set_page_config(
@@ -16,10 +17,20 @@ st.set_page_config(
 )
 
 project_dir = Path(__file__).resolve().parent
-load_dotenv(project_dir / ".env", override=True)
+load_dotenv(project_dir / ".env", override=False)
 
-api_key = os.getenv("XAI_API_KEY", "").strip()
-model = os.getenv("XAI_MODEL", "").strip()
+def setting(name):
+    try:
+        value = st.secrets.get(name)
+    except FileNotFoundError:
+        value = None
+    return str(value if value is not None else os.getenv(name, "")).strip()
+
+
+@st.cache_resource(show_spinner=False)
+def initialize_data():
+    prepare_data()
+    return True
 
 
 st.title("Equity Research Copilot")
@@ -50,12 +61,34 @@ with st.sidebar:
     )
 
 
-if not api_key or not model:
-    st.error("Uzupełnij XAI_API_KEY i XAI_MODEL w pliku .env.")
+mode = st.radio("Tryb", ["Przykład bez API", "Analiza na żywo"], horizontal=True)
+
+if mode == "Przykład bez API":
+    st.info("Zapisane podsumowanie wcześniejszego testu. Ten widok nie wywołuje AI.")
+    st.subheader("Czy wzrost przychodów cyber_Folks w 2025 był wyłącznie organiczny?")
+    st.markdown("""
+**Przychody:** 656 331 tys. PLN w 2024 → 855 151 tys. PLN w 2025.
+**Dynamika raportowanych przychodów: +30,29%.**
+
+Komentarz zarządu wskazuje zarówno wzrost organiczny, jak i konsolidację
+Shoper od lutego oraz Hosterion od czerwca 2025 r. Przytoczone fragmenty
+nie pozwalają wyliczyć udziału każdego czynnika w całkowitej dynamice.
+Dane 2024 są przekształcone; porównanie dotyczy grupy kapitałowej.
+
+Źródła: [sprawozdanie finansowe, s. 5](https://investors.cyberfolks.pl/wp-content/uploads/2026/05/CBF-2025-12-31-1-pl.xhtml)
+i [raport zarządu, s. 39 i 73](https://investors.cyberfolks.pl/wp-content/uploads/2026/05/CBF2025_raport_roczny_work_xsm.xhtml).
+
+[Obejrzyj nagranie dema](https://www.youtube.com/watch?v=tvC2XNsOvrg)
+· [Kod projektu](https://github.com/skiman1357-debug/equity-research-copilot)
+""")
     st.stop()
 
-if not (project_dir / "data" / "financials.db").is_file():
-    st.error("Brakuje bazy danych. Uruchom setup_database.py.")
+api_key = setting("XAI_API_KEY")
+model = setting("XAI_MODEL")
+access_code = setting("DEMO_ACCESS_CODE")
+
+if not api_key or not model or not access_code:
+    st.info("Analiza na żywo jest obecnie niedostępna. Możesz obejrzeć przykład bez API.")
     st.stop()
 
 
@@ -74,15 +107,19 @@ with st.form("analysis_form"):
         max_chars=3000,
     )
 
+    provided_code = st.text_input("Kod dostępu do analizy na żywo", type="password")
     submitted = st.form_submit_button("Przeanalizuj")
 
 st.caption(
     "Analiza korzysta z płatnego API xAI. "
-    "Jedno pytanie może wymagać kilku zapytań do modelu."
+    "Pytanie i wykorzystane fragmenty raportów są przesyłane do xAI."
 )
 
 
 if submitted:
+    if not access_allowed(provided_code, access_code):
+        st.error("Nieprawidłowy kod dostępu.")
+        st.stop()
     if not question.strip():
         st.warning("Najpierw wpisz pytanie.")
     else:
@@ -96,6 +133,11 @@ if submitted:
         }
 
         with st.spinner("Agent sprawdza dane i przygotowuje odpowiedź..."):
+            try:
+                initialize_data()
+            except Exception:
+                st.error("Nie udało się przygotować danych lub pobrać raportów. Spróbuj ponownie później.")
+                st.stop()
             try:
                 with OpenAI(
                     api_key=api_key,
@@ -117,13 +159,13 @@ if submitted:
                 )
 
             except APIStatusError as error:
-                details = error.response.text.replace(
-                    api_key,
-                    "[UKRYTY KLUCZ]",
-                )
                 analysis["error"] = (
-                    f"Błąd API HTTP {error.status_code}: {details}"
+                    f"Usługa AI zwróciła błąd HTTP {error.status_code}. "
+                    "Spróbuj ponownie później lub skontaktuj się z autorem aplikacji."
                 )
+            except Exception:
+                analysis["error"] = "Analiza nie powiodła się. Spróbuj ponownie później."
+
 
         st.session_state["last_analysis"] = analysis
 
